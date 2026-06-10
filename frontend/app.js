@@ -1,6 +1,8 @@
 // Game State & Storage
 let chartInstance = null;
-const BACKEND_URL = "http://127.0.0.1:5000";
+const BACKEND_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname.startsWith("192.168")
+    ? `http://${window.location.hostname}:5000`
+    : window.location.origin;
 
 function getStoreSearchUrl(site, query) {
     const encodedQuery = encodeURIComponent(query);
