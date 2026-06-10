@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DealPulse AI - Gamified ML Price Predictor & Deal Tracker</title>
+    <meta name="description" content="Use machine learning and fuzzy name-matching to predict price drops across 10+ major retailers in the next 10-20 days. Gamify your shopping bets!">
+    
+    <!-- Custom CSS Link -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Chart.js CDN for interactive graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header>
+        <div class="nav-container">
+            <div class="logo" id="app-logo">
+                DealPulse AI
+            </div>
+            
+            <div class="nav-controls">
+                <!-- Light / Dark Mode Toggle -->
+                <button class="theme-btn" id="theme-toggle" aria-label="Toggle dark and light mode">
+                    🌙
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="tagline-badge">AI-POWERED PRICE RESOLVER</div>
+        <h1>Track Prices. Predict Deals.<br><span>Win the Savings Game.</span></h1>
+        <p>Type any product. We scan 10 major retailers, resolve mismatched titles using machine learning, and predict if a price drop will occur in the next 10 to 20 days.</p>
+        
+        <!-- Search Form -->
+        <form id="search-form" onsubmit="event.preventDefault();">
+            <div class="search-wrapper">
+                <span class="search-icon"></span>
+                <input type="text" id="search-input" placeholder="Try 'iPhone 15 Pro', 'PlayStation 5 Console', or 'Sony headphones'..." required>
+                <button type="submit" class="search-btn" id="search-btn">Pulse Search</button>
+            </div>
+        </form>
+    </section>
+
+    <!-- Main Dashboard Area -->
+    <main class="dashboard" id="dashboard-area">
+        
+        <!-- Empty State Container (Displayed before first search) -->
+        <div class="empty-dashboard" id="empty-state">
+            <div class="empty-icon"></div>
+            <h3>Scan Retailers & Forecast Pricing</h3>
+            <p>Enter a product name above to initiate a multi-site scanner. We will compute similarity scores and run scikit-learn models to predict the price trend.</p>
+            
+            <div class="sample-searches">
+                <div class="sample-tag" onclick="prefillSearch('iPhone 15 Pro Max')">iPhone 15 Pro Max</div>
+                <div class="sample-tag" onclick="prefillSearch('PlayStation 5')">PlayStation 5</div>
+                <div class="sample-tag" onclick="prefillSearch('Sony WH-1000XM4')">Sony WH-1000XM4</div>
+                <div class="sample-tag" onclick="prefillSearch('AirPods Pro 2')">AirPods Pro 2</div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay (Visible during API fetches) -->
+        <div class="glass-card loading-indicator" id="loading-state" style="display: none; grid-column: 1 / -1;">
+            <div class="spinner"></div>
+            <h3 id="loading-title">Initializing Search...</h3>
+            <p id="loading-text">Connecting to Python ML Backend...</p>
+        </div>
+
+        <!-- Left Column: Search Results & Graphs (Hidden initially) -->
+        <div class="dashboard-panel" id="left-panel" style="display: none;">
+            
+            <!-- Site Scanner Log Card -->
+            <div class="glass-card glow" id="scanner-card">
+                <div class="panel-header">
+                    <h3 class="panel-title">Retailer Scan Radar</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);" id="scan-progress-label">Resolved 0/10 sites</div>
+                </div>
+                
+                <div class="scanner-container" id="scan-logs-wrapper">
+                    <!-- Scan rows will be populated dynamically -->
+                </div>
+            </div>
+            
+            <!-- Price History & Forecast Chart -->
+            <div class="glass-card" id="chart-card">
+                <div class="panel-header">
+                    <h3 class="panel-title">ML Price Forecast (20 Days)</h3>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); font-family: var(--font-body);" id="chart-product-name">Product Name</div>
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="price-forecast-chart"></canvas>
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- Right Column: Predictions & Gamification (Hidden initially) -->
+        <div class="dashboard-panel" id="right-panel" style="display: none;">
+            
+            <!-- Deal Pulse Machine Learning Recommendations -->
+            <div class="glass-card glow" id="forecast-card">
+                <div class="panel-header">
+                    <h3 class="panel-title">DealPulse Forecast</h3>
+                </div>
+                
+                <div class="prediction-summary">
+                    <div class="prediction-hero-grid">
+                        
+                        <!-- BUY/WAIT Indicator -->
+                        <div class="prediction-card">
+                            <span class="metric-label" style="margin-bottom: 5px; font-weight: 600;">RECOMMENDATION</span>
+                            <div class="recommendation-value buy" id="reco-val">BUY</div>
+                            <p class="reco-reason" id="reco-reason">Prices are expected to rise. Buy now for the best deal.</p>
+                        </div>
+                        
+                        <!-- 10-Day Deal probability ring -->
+                        <div class="prediction-card">
+                            <span class="metric-label" style="margin-bottom: 5px; font-weight: 600;">10-DAY DEAL PROBABILITY</span>
+                            <div class="prob-circle-container">
+                                <svg class="prob-circle-svg">
+                                    <circle class="prob-circle-bg" cx="55" cy="55" r="45"></circle>
+                                    <circle class="prob-circle-val" id="prob-ring-10" cx="55" cy="55" r="45" stroke-dasharray="283" stroke-dashoffset="283"></circle>
+                                </svg>
+                                <div class="prob-percent" id="prob-val-10">0%</div>
+                            </div>
+                            <div class="prob-days">Chance of &ge; 5% Drop</div>
+                        </div>
+                        
+                    </div>
+                    
+                    <!-- 20-Day probability and detailed stats -->
+                    <div class="deal-metrics">
+                        <div class="metric-box">
+                            <span class="metric-label">20-Day Deal Prob</span>
+                            <div class="metric-value" style="color: var(--accent-cyan);" id="prob-val-20">0%</div>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Potential Savings</span>
+                            <div class="metric-value savings" id="savings-pct">0.0%</div>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Current Price</span>
+                            <div class="metric-value" id="current-price-val">₹0.00</div>
+                        </div>
+                        <div class="metric-box">
+                            <span class="metric-label">Predicted Low</span>
+                            <div class="metric-value" id="predicted-low-val" style="color: var(--accent-green);">₹0.00</div>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+            
+
+            
+        </div>
+        
+    </main>
+
+    <!-- Custom Client Script Link -->
+    <script src="app.js"></script>
+</body>
+</html>
