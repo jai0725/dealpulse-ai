@@ -1,3 +1,8 @@
+import sys
+import os
+# Ensure backend directory is in python path for Vercel
+sys.path.append(os.path.dirname(__file__))
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import re
@@ -6,7 +11,6 @@ import numpy as np
 import urllib.parse
 import urllib.request
 import json
-import os
 
 # Import our custom modules
 from matcher import evaluate_matches
@@ -323,4 +327,4 @@ def health_check():
 if __name__ == "__main__":
     print("Starting DealPulse Backend Server...")
     print("Server running at http://127.0.0.1:5000")
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
